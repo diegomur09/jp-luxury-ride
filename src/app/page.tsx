@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { apiClient } from "@/lib/api";
 
 export default function Home() {
   const [showLogin, setShowLogin] = useState(false);
@@ -39,32 +40,44 @@ export default function Home() {
     }
   };
 
-  const handleAuth = (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-    const name = formData.get("name") as string;
-    const role = (formData.get("role") as string) || "customer";
+    const name = (formData.get("name") as string) || "";
+    const role = ((formData.get("role") as string) || "customer") as
+      | "customer"
+      | "driver"
+      | "admin";
 
-    // Mock authentication - in real app, use proper auth service
-    const userData = {
-      id: Math.random().toString(36),
-      email,
-      name: name || email.split("@")[0],
-      role,
-    };
+    try {
+      let authResult: any;
+      if (isSignUp) {
+        authResult = await apiClient.register({ name, email, password, role });
+      } else {
+        authResult = await apiClient.login(email, password);
+      }
 
-    localStorage.setItem("user", JSON.stringify(userData));
-    setUser(userData);
+      const backendUser = authResult?.user || {
+        id: "",
+        email,
+        name: name || email.split("@")[0],
+        role,
+      };
 
-    // Show success message and redirect
-    alert(`Welcome ${userData.name}! Redirecting to your dashboard...`);
+      localStorage.setItem("user", JSON.stringify(backendUser));
+      setUser(backendUser);
 
-    // Route user to appropriate page based on role
-    setTimeout(() => {
-      routeUserByRole(userData.role);
-    }, 1500);
+      alert(`Welcome ${backendUser.name}! Redirecting to your dashboard...`);
+      setTimeout(() => {
+        routeUserByRole(backendUser.role);
+      }, 800);
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      alert(err?.message || "Authentication failed. Please try again.");
+    }
   };
 
   // Show loading state

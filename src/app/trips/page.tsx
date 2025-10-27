@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import AuthCheck from "../components/AuthCheck";
 import Navigation from "../components/Navigation";
+import { apiClient } from "@/lib/api";
 
 interface Booking {
   id: string;
@@ -47,25 +48,37 @@ function MyTripsContent() {
   const [tip, setTip] = useState("");
 
   useEffect(() => {
-    // Load bookings from localStorage (in real app, fetch from API)
-    const savedBookings = localStorage.getItem("bookings");
-    if (savedBookings) {
-      const parsed = JSON.parse(savedBookings);
-      // Add mock driver data for demo
-      const bookingsWithDrivers = parsed.map((booking: Booking) => ({
-        ...booking,
-        driver: {
-          name: "James Wilson",
-          phone: "+1 (555) 123-4567",
-          vehicle: {
-            make: "Mercedes-Benz",
-            model: "S-Class",
-            plate: "LUX-001",
+    const loadBookings = async () => {
+      try {
+        const backendBookings: any[] = await apiClient.getBookings();
+        const mapped: Booking[] = backendBookings.map((b: any) => ({
+          id: b.id,
+          pickup: b.pickup || b.pickupAddress,
+          dropoff: b.dropoff || b.dropoffAddress,
+          stops: b.stops || [],
+          date: b.date || b.scheduledDate || b.createdAt,
+          time: b.time || b.scheduledTime || "",
+          vehicleId: b.vehicleId || b.vehicleType || "",
+          passengers: b.passengers || b.passengerCount || 1,
+          notes: b.notes || b.specialNotes || "",
+          status: (b.status || "confirmed") as Booking["status"],
+          pricing: { total: b.totalAmount ?? b.pricing?.total ?? 0 },
+          route: {
+            distance: b.route?.distance ?? 0,
+            duration: b.route?.duration ?? 0,
           },
-        },
-      }));
-      setBookings(bookingsWithDrivers);
-    }
+          driver: b.driver || undefined,
+          rating: b.rating,
+          review: b.review,
+          createdAt: b.createdAt || new Date().toISOString(),
+        }));
+        setBookings(mapped);
+      } catch (err) {
+        console.error("Failed to load bookings:", err);
+        setBookings([]);
+      }
+    };
+    loadBookings();
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -98,33 +111,38 @@ function MyTripsContent() {
     }
   };
 
-  const handleRating = (bookingId: string) => {
-    // Update booking with rating and review
-    const updatedBookings = bookings.map((booking) =>
-      booking.id === bookingId ? { ...booking, rating, review } : booking
-    );
-    setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+  const handleRating = async (bookingId: string) => {
+    try {
+      await apiClient.updateBooking(bookingId, { rating, review });
+      const updatedBookings = bookings.map((b) =>
+        b.id === bookingId ? { ...b, rating, review } : b
+      );
+      setBookings(updatedBookings);
 
-    // Reset modal
-    setShowRatingModal(false);
-    setSelectedBooking(null);
-    setRating(0);
-    setReview("");
-    setTip("");
-
-    alert("Thank you for your feedback!");
+      setShowRatingModal(false);
+      setSelectedBooking(null);
+      setRating(0);
+      setReview("");
+      setTip("");
+      alert("Thank you for your feedback!");
+    } catch (err: any) {
+      console.error("Rating failed:", err);
+      alert(err?.message || "Failed to submit rating. Please try again.");
+    }
   };
 
-  const handleDeleteTrip = (bookingId: string) => {
-    const updatedBookings = bookings.filter(
-      (booking) => booking.id !== bookingId
-    );
-    setBookings(updatedBookings);
-    localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-    setShowDeleteModal(false);
-    setBookingToDelete(null);
-    alert("Trip deleted successfully!");
+  const handleDeleteTrip = async (bookingId: string) => {
+    try {
+      await apiClient.deleteBooking(bookingId);
+      const updated = bookings.filter((b) => b.id !== bookingId);
+      setBookings(updated);
+      setShowDeleteModal(false);
+      setBookingToDelete(null);
+      alert("Trip deleted successfully!");
+    } catch (err: any) {
+      console.error("Delete failed:", err);
+      alert(err?.message || "Failed to delete trip. Please try again.");
+    }
   };
 
   const handleModifyTrip = (booking: Booking) => {

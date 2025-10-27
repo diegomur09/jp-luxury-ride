@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import AuthCheck from "../components/AuthCheck";
 import Navigation from "../components/Navigation";
+import { apiClient } from "@/lib/api";
 
 function BookRideContent() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -306,46 +307,33 @@ function BookRideContent() {
   };
 
   const handleBooking = async () => {
-    const existingBookings = JSON.parse(
-      localStorage.getItem("bookings") || "[]"
-    );
-
-    if (isModifyMode && originalBookingId) {
-      // Update existing booking
-      const updatedBookings = existingBookings.map((booking: any) =>
-        booking.id === originalBookingId
-          ? {
-              ...booking,
-              ...bookingData,
-              pricing,
-              // Keep original id, status, and createdAt
-              id: originalBookingId,
-              status: booking.status,
-              createdAt: booking.createdAt,
-            }
-          : booking
-      );
-
-      localStorage.setItem("bookings", JSON.stringify(updatedBookings));
-      alert("Trip updated successfully! Redirecting to your trips...");
-    } else {
-      // Create new booking
-      const booking = {
-        ...bookingData,
-        pricing,
-        id: Math.random().toString(36),
-        status: "confirmed",
-        createdAt: new Date().toISOString(),
+    try {
+      const payload: any = {
+        pickupAddress: bookingData.pickup,
+        dropoffAddress: bookingData.dropoff,
+        stops: bookingData.stops,
+        scheduledDate: bookingData.date,
+        scheduledTime: bookingData.time,
+        passengerCount: bookingData.passengers,
+        vehicleType: bookingData.vehicleId,
+        specialNotes: bookingData.notes,
+        totalAmount: pricing.total,
+        route: bookingData.route,
       };
 
-      localStorage.setItem(
-        "bookings",
-        JSON.stringify([...existingBookings, booking])
-      );
-      alert("Booking confirmed! Redirecting to confirmation page...");
-    }
+      if (isModifyMode && originalBookingId) {
+        await apiClient.updateBooking(originalBookingId, payload);
+        alert("Trip updated successfully! Redirecting to your trips...");
+      } else {
+        await apiClient.createBooking(payload);
+        alert("Booking confirmed! Redirecting to your trips...");
+      }
 
-    window.location.href = "/trips";
+      window.location.href = "/trips";
+    } catch (error: any) {
+      console.error("Booking error:", error);
+      alert(error?.message || "Failed to submit booking. Please try again.");
+    }
   };
 
   return (
