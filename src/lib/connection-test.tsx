@@ -23,7 +23,7 @@ export async function testBackendConnection() {
       return true;
     }
   } catch (error) {
-    console.log("❌ Backend connection failed:", error.message);
+    console.log("❌ Backend connection failed:", error);
     return false;
   }
 }
