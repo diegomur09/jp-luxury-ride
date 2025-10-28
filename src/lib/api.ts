@@ -110,6 +110,9 @@ export class ApiClient {
     return this.request<any>('/api/auth/profile');
   }
 
+  async getUserByEmail(email: string) {
+    return this.request<any>(`/api/users?email=${encodeURIComponent(email)}`);
+  }
   async updateProfile(profileData: any) {
     return this.request<any>('/api/auth/profile', {
       method: 'PUT',

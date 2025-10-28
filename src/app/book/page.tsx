@@ -8,15 +8,18 @@ import { apiClient } from "@/lib/api";
 function BookRideContent() {
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingData, setBookingData] = useState({
-    pickup: "",
-    dropoff: "",
-    stops: [] as string[],
-    date: "",
-    time: "",
-    vehicleId: "",
-    passengers: 1,
+    pickupAddressId: "", // UUID
+    dropoffAddressId: "", // UUID
+    stops: [] as {
+      address: string;
+      latitude: number;
+      longitude: number;
+      order: number;
+    }[],
+    scheduledAt: "", // ISO datetime
+    vehicleId: "", // UUID
     notes: "",
-    route: null as any,
+    specialRequests: "",
   });
 
   const [vehicles] = useState([
@@ -309,16 +312,13 @@ function BookRideContent() {
   const handleBooking = async () => {
     try {
       const payload: any = {
-        pickupAddress: bookingData.pickup,
-        dropoffAddress: bookingData.dropoff,
-        stops: bookingData.stops,
-        scheduledDate: bookingData.date,
-        scheduledTime: bookingData.time,
-        passengerCount: bookingData.passengers,
-        vehicleType: bookingData.vehicleId,
-        specialNotes: bookingData.notes,
-        totalAmount: pricing.total,
-        route: bookingData.route,
+        vehicleId: bookingData.vehicleId, // UUID
+        pickupAddressId: bookingData.pickupAddressId, // UUID
+        dropoffAddressId: bookingData.dropoffAddressId, // UUID
+        scheduledAt: bookingData.scheduledAt, // ISO datetime
+        stops: bookingData.stops, // array of {address, latitude, longitude, order}
+        notes: bookingData.notes,
+        specialRequests: bookingData.specialRequests,
       };
 
       if (isModifyMode && originalBookingId) {
