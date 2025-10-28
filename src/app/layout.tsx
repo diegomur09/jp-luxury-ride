@@ -13,31 +13,40 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-// Mock authentication - in real app, use proper auth service
+// Auth hook that stores user and JWT token separately
 const useAuth = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate auth check
     const checkAuth = () => {
-      const userData = localStorage.getItem("user");
-      if (userData) {
-        setUser(JSON.parse(userData));
+      try {
+        if (typeof window !== "undefined") {
+          const userData = localStorage.getItem("user");
+          const token = localStorage.getItem("token");
+          if (userData && token) {
+            setUser(JSON.parse(userData));
+          }
+        }
+      } catch (e) {
+        // Ignore localStorage errors
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-
     checkAuth();
   }, []);
 
-  const login = (userData: any) => {
+  // Call this after successful login API call
+  const login = (userData: any, token: string) => {
     localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("token", token);
     setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     setUser(null);
   };
 

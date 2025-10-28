@@ -71,7 +71,7 @@ export default function Navigation() {
               className="object-contain rounded-full"
             />
             <span className="text-2xl font-bold text-black">
-              JP Luxury Ride
+              DP Luxury Ride
             </span>
           </Link>
 
@@ -94,9 +94,8 @@ export default function Navigation() {
               {/* User Info */}
               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-black">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">
-                    {user.role}
+                  <p className="text-sm font-medium text-black">
+                    {user.firstName || user.email}
                   </p>
                 </div>
                 <button

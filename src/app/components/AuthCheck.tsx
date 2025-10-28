@@ -19,21 +19,36 @@ export default function AuthCheck({
   const router = useRouter();
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
+    let parsedUser = null;
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        parsedUser = JSON.parse(savedUser);
+        // Defensive: must have at least an id and role
+        if (!parsedUser || !parsedUser.role) {
+          parsedUser = null;
+        }
+      }
+    } catch (e) {
+      parsedUser = null;
+    }
 
-    if (!savedUser) {
-      // No user found, redirect to home
+    if (!parsedUser) {
+      // No valid user found, clear localStorage and redirect
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      setUser(null);
+      setIsLoading(false);
       router.push("/");
       return;
     }
 
-    const userData = JSON.parse(savedUser);
-    setUser(userData);
+    setUser(parsedUser);
 
     // Check if user has required role
-    if (requiredRole && userData.role !== requiredRole) {
+    if (requiredRole && parsedUser.role !== requiredRole) {
       // User doesn't have required role, redirect based on their role
-      switch (userData.role) {
+      switch (parsedUser.role) {
         case "admin":
           router.push("/admin/dashboard");
           break;
@@ -45,6 +60,7 @@ export default function AuthCheck({
           router.push("/book");
           break;
       }
+      setIsLoading(false);
       return;
     }
 

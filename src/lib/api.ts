@@ -1,51 +1,33 @@
 // API client to connect to the lux-ride_backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
 // API client class for making requests to the backend
 export class ApiClient {
   private baseUrl: string;
-  private token: string | null = null;
-
   constructor() {
     this.baseUrl = API_BASE_URL;
-    
-    // Get token from localStorage if available
-    if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token');
-    }
   }
 
-  // Set authentication token
-  setToken(token: string) {
-    this.token = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
-    }
-  }
-
-  // Remove authentication token
-  clearToken() {
-    this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
-    }
-  }
 
   // Make HTTP request with authentication
   private async request<T>(
-    endpoint: string, 
+    endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
 
-    // Add auth token if available
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // Always get the latest token from localStorage
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('token');
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const config: RequestInit = {
@@ -55,7 +37,7 @@ export class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Network error' }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -74,11 +56,6 @@ export class ApiClient {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    
-    if (data.token) {
-      this.setToken(data.token);
-    }
-    
     return data;
   }
 
@@ -87,22 +64,13 @@ export class ApiClient {
       method: 'POST',
       body: JSON.stringify(userData),
     });
-    
-    if (data.token) {
-      this.setToken(data.token);
-    }
-    
     return data;
   }
 
   async logout() {
-    try {
-      await this.request('/api/auth/logout', {
-        method: 'POST',
-      });
-    } finally {
-      this.clearToken();
-    }
+    await this.request('/api/auth/logout', {
+      method: 'POST',
+    });
   }
 
   // User profile methods

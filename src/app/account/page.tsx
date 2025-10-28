@@ -42,17 +42,31 @@ function AccountContent() {
   ]);
 
   useEffect(() => {
-    // Load user data
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      const parsed = JSON.parse(userData);
-      setUser(parsed);
-      setProfileData((prev) => ({
-        ...prev,
-        name: parsed.name || "",
-        email: parsed.email || "",
-      }));
+    let parsed = null;
+    try {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        parsed = JSON.parse(userData);
+        if (!parsed || !parsed.role) {
+          parsed = null;
+        }
+      }
+    } catch (e) {
+      parsed = null;
     }
+    if (!parsed) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      setUser(null);
+      window.location.href = "/";
+      return;
+    }
+    setUser(parsed);
+    setProfileData((prev) => ({
+      ...prev,
+      name: parsed.name || "",
+      email: parsed.email || "",
+    }));
   }, []);
 
   const handleProfileUpdate = (e: React.FormEvent) => {

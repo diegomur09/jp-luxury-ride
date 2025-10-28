@@ -46,7 +46,8 @@ export default function Home() {
     const formData = new FormData(form);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-    const name = (formData.get("name") as string) || "";
+    const firstName = (formData.get("firstName") as string) || "";
+    const lastName = (formData.get("lastName") as string) || "";
     const role = ((formData.get("role") as string) || "customer") as
       | "customer"
       | "driver"
@@ -55,19 +56,29 @@ export default function Home() {
     try {
       let authResult: any;
       if (isSignUp) {
-        authResult = await apiClient.register({ name, email, password, role });
+        authResult = await apiClient.register({
+          firstName,
+          lastName,
+          email,
+          password,
+          role,
+        });
       } else {
         authResult = await apiClient.login(email, password);
       }
 
+      // Save both user and token to localStorage
       const backendUser = authResult?.user || {
         id: "",
         email,
-        name: name || email.split("@")[0],
+  name: `${firstName} ${lastName}`.trim() || email.split("@")[0],
         role,
       };
-
+      const token = authResult?.token || null;
       localStorage.setItem("user", JSON.stringify(backendUser));
+      if (token) {
+        localStorage.setItem("token", token);
+      }
       setUser(backendUser);
 
       alert(`Welcome ${backendUser.name}! Redirecting to your dashboard...`);
@@ -145,21 +156,39 @@ export default function Home() {
             <div className="mt-8">
               <form className="space-y-6" onSubmit={handleAuth}>
                 {isSignUp && (
-                  <div>
-                    <label
-                      htmlFor="name"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Full Name
-                    </label>
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      required={isSignUp}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-black focus:outline-none focus:ring-black focus:border-black"
-                      placeholder="Enter your full name"
-                    />
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <label
+                        htmlFor="firstName"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        First Name
+                      </label>
+                      <input
+                        id="firstName"
+                        name="firstName"
+                        type="text"
+                        required={isSignUp}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-black focus:outline-none focus:ring-black focus:border-black"
+                        placeholder="First name"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label
+                        htmlFor="lastName"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Last Name
+                      </label>
+                      <input
+                        id="lastName"
+                        name="lastName"
+                        type="text"
+                        required={isSignUp}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-black focus:outline-none focus:ring-black focus:border-black"
+                        placeholder="Last name"
+                      />
+                    </div>
                   </div>
                 )}
 

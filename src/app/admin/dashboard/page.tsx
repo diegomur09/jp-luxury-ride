@@ -37,6 +37,24 @@ function AdminDashboardContent() {
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
 
   useEffect(() => {
+    let parsedUser = null;
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        parsedUser = JSON.parse(savedUser);
+        if (!parsedUser || !parsedUser.role) {
+          parsedUser = null;
+        }
+      }
+    } catch (e) {
+      parsedUser = null;
+    }
+    if (!parsedUser) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      window.location.href = "/";
+      return;
+    }
     // Mock dashboard data
     setStats({
       totalBookings: 1247,
